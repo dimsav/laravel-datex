@@ -8,13 +8,12 @@
 |
 */
 
+// Todo: check this site for info: http://www.brightcherry.co.uk/scribbles/php-adding-and-subtracting-dates/
 class Datex
 {
-    // Todo: check this site for info: http://www.brightcherry.co.uk/scribbles/php-adding-and-subtracting-dates/
 
-    /*
-     * This is needed when the php format is default.
-     */
+    // Class variables
+
     private static $formats = array(
         '.'   => 'eur', // DD.MM.YY
         '/'   => 'usa', // MM/DD/YY
@@ -23,12 +22,25 @@ class Datex
     );
 
     private static $default_format = 'php';
-
+    private static $mode = 'time';
     public static $options = array();
 
-    public static function date($output_format, $input, $input_format = null)
+
+    // Setting functions
+
+    public static function set_mode($mode)
     {
-        return date($output_format, strtotime(self::datetime($input, $input_format)));
+        if ($mode == 'time' || $mode == 'date' )
+        {
+            self::$mode = $mode;
+            return true;
+    }
+        return false;
+    }
+
+    public static function get_mode()
+    {
+        return self::$mode;
     }
 
     public static function set_format($format)
@@ -49,15 +61,40 @@ class Datex
         return self::$default_format;
     }
 
+    // Public functions
+
+    public static function date($output_format, $input = '', $input_format = null)
+    {
+        if (empty($input))
+        {
+            return false;
+        }
+        return date($output_format, strtotime(self::_datetime($input, $input_format)));
+    }
+
+    public static function time()
+    {
+        // Todo: call _datetime() with mode=time
+    }
+
+    public static function datetime($string = '', $format = null)
+    {
+        return self::_datetime($string, $format);
+    }
+
+    // Private functions
+
     /*
 	|--------------------------------------------------------------------------
 	| Converts the string to the MySQL datetime format (2001-03-10 17:16:18)
 	|--------------------------------------------------------------------------
-	|
-	|
 	*/
-    public static function datetime($string = '1', $format = null)
+    private static function _datetime($string, $format)
     {
+        if (empty($string))
+        {
+            return false;
+        }
         if ( isset($format) )
         {
             self::set_format($format);
@@ -105,9 +142,6 @@ class Datex
 	|--------------------------------------------------------------------------
 	| Splits the input string to date and time parts
 	|--------------------------------------------------------------------------
-	|
-	|
-	|
 	*/
     private static function string_splitter($string)
     {
@@ -119,8 +153,17 @@ class Datex
         // If no space is found in $string, we consider the $string to be a time
         if (count($string_parts) == 1)
         {
+            if (self::$mode == 'time')
+            {
             $date_str = null;
             $time_str = $string_parts[0];
+        }
+            else
+            {
+                $date_str = $string_parts[0];
+                $time_str = null;
+            }
+
         }
         // If only one space is found in $sting, we determine both date and time
         elseif (count($string_parts) == 2)
@@ -136,6 +179,8 @@ class Datex
 
         return array($date_str, $time_str);
     }
+
+    // Private functions
 
     /*
 	|--------------------------------------------------------------------------
@@ -300,14 +345,13 @@ class Datex
 
     private static function string_to_time_stamp($string)
     {
-        $input_minutes = $input_seconds = '00';
+        $input_hour = $input_minutes = $input_seconds = '00';
         $adjustments = array();
-
         preg_match_all('!([0-9]+)(\D)*!', $string, $split_array);
 
         $count = count($split_array[0]);
 
-        if ( $count < 1  || $count > 3)
+        if ( $count > 3)
             return false;
 
         if ( $count == 3 )
